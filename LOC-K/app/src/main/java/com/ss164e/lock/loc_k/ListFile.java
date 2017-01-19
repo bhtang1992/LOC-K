@@ -1,32 +1,80 @@
 package com.ss164e.lock.loc_k;
 
-import android.app.ListActivity;
+import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.Settings;
+import android.support.v7.app.AppCompatActivity;
+import android.telephony.TelephonyManager;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
+
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 
-public class ListFile extends ListActivity {
+
+
+public class ListFile extends AppCompatActivity {
 
     private String path;
     private Button button;
+    String internalKey;
+    static final int READ_BLOCK_SIZE = 100;
+    public final static String EXTRA_MESSAGE = "";
+    final Context context = this;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_file);
+
+        //reading secret key from file
+        try {
+            FileInputStream fileIn = openFileInput("secretKey.txt");
+
+            Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show();
+
+        } catch (Exception e) {
+
+            // create secret key and save to internal storage
+            try {
+                // GET DEVICE ID
+                final String deviceId = Settings.Secure.getString(getContentResolver(),Settings.Secure.ANDROID_ID);
+
+                // GET IMEI NUMBER
+                TelephonyManager tManager = (TelephonyManager) getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
+                String deviceIMEI = tManager.getDeviceId();
+
+                internalKey = deviceId + deviceIMEI;
+
+                FileOutputStream fileout = openFileOutput("secretKey.txt", MODE_PRIVATE);
+                OutputStreamWriter outputWriter = new OutputStreamWriter(fileout);
+                outputWriter.write(internalKey);
+                outputWriter.close();
+
+                //display successfully created message
+                Toast.makeText(getBaseContext(), "Secret Key created successfully!", Toast.LENGTH_SHORT).show();
+
+            } catch (Exception f) {
+                f.printStackTrace();
+            }
+        }
 
         //if there is no SD card, create new directory objects to make directory on device
         if(Environment.getExternalStorageState() == null){
@@ -49,7 +97,7 @@ public class ListFile extends ListActivity {
         if(getIntent().hasExtra("path")){
             path = getIntent().getStringExtra("path");
         }
-        setTitle(path);
+        //setTitle(path);
 
         // Read all files sorted into the values-array
         List values = new ArrayList();
@@ -67,10 +115,9 @@ public class ListFile extends ListActivity {
         }
         Collections.sort(values);
 
-        // Put the data into the list
-        ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_2, android.R.id.text1, values);
-        setListAdapter(adapter);
-
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_2, android.R.id.text1, values);
+        ListView lv = (ListView)findViewById(android.R.id.list);
+        lv.setAdapter(adapter);
 
         button = (Button) findViewById(R.id.newFileButton);
         // add button listener
@@ -82,46 +129,85 @@ public class ListFile extends ListActivity {
                 finish();
             }
         });
-    }
-    public final static String EXTRA_MESSAGE = "temp_message";
 
-    @Override
-    protected void onListItemClick(ListView l, View v, int position, long id){
-        String filename = (String) getListAdapter().getItem(position);
-        if (path.endsWith(File.separator)){
-            filename = path + filename;
-        }else{
-            filename = path + File.separator + filename;
-        }
-        if(new File(filename).isDirectory()){
-            Intent intent = new Intent(this, ExistingFile.class);
-            intent.putExtra("path", filename);
-            startActivity(intent);
-        }else{
-            //Read text from file
-            StringBuilder text = new StringBuilder();
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener()
+        {
+            @Override
+            public void onItemClick(AdapterView<?> a, View v, int position, long id)
+            {
 
-            try {
-                BufferedReader br = new BufferedReader(new FileReader(filename));
-                String line;
+                String filename = (String) a.getAdapter().getItem(position);
+                String fileN = (String) a.getAdapter().getItem(position);
 
-                while ((line = br.readLine()) != null) {
-                    text.append(line);
-                    text.append('\n');
+                if (path.endsWith(File.separator)){
+                    filename = path + filename;
+                }else{
+                    filename = path + File.separator + filename;
                 }
-                br.close();
-                //Toast.makeText(this, filename, Toast.LENGTH_LONG).show();
-                //Find the view by its id
-                Intent intent = new Intent(this, ExistingFile.class);
-                intent.putExtra(EXTRA_MESSAGE, text.toString());
-                startActivity(intent);
-                finish();
-                //br.close();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+
+                if(new File(filename).isDirectory()){
+                    Intent intent = new Intent(ListFile.this, ExistingFile.class);
+                    intent.putExtra("path", filename);
+                    startActivity(intent);
+                }
+                else{
+                    //Read text from file
+                    final StringBuilder text = new StringBuilder();
+
+                    try {
+                        BufferedReader br = new BufferedReader(new FileReader(filename));
+                        String line;
+
+                        while ((line = br.readLine()) != null) {
+                            text.append(line);
+                            text.append('\n');
+                        }
+                        br.close();
+
+                        final Dialog dialog = new Dialog(context);
+                        dialog.setContentView(R.layout.activity_password_dialog);
+                        dialog.setTitle(fileN);
+
+                        Button dialogButton = (Button) dialog.findViewById(R.id.dialogButtonEnter);
+                        final EditText passwordText = (EditText) dialog.findViewById(R.id.passwordTextbox);
+
+                        dialog.show();
+
+                        final String finalFilename = filename;
+                        dialogButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+
+                                try {
+                                    String passwordEntry = passwordText.getText().toString();
+                                    String hashedPw = SHA1.hash(passwordEntry);
+
+                                    BufferedReader pwbr = new BufferedReader(new FileReader(finalFilename));
+                                    String storedPw = pwbr.readLine();
+                                    Toast.makeText(getBaseContext(), storedPw, Toast.LENGTH_SHORT).show();
+                                    pwbr.close();
+
+                                    if (hashedPw.equals(storedPw)) {
+                                        dialog.dismiss();
+                                        Intent intent = new Intent(ListFile.this, ExistingFile.class);
+                                        intent.putExtra(EXTRA_MESSAGE, text.toString());
+                                        startActivity(intent);
+                                        finish();
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+
+                        //br.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
-        }
+        });
     }
 }
