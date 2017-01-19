@@ -1,6 +1,8 @@
 package com.ss164e.lock.loc_k;
 
 import android.Manifest;
+import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -9,7 +11,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -23,11 +24,12 @@ import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListe
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.GoogleMap;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class NewFile extends AppCompatActivity implements
         ConnectionCallbacks,
@@ -45,6 +47,9 @@ public class NewFile extends AppCompatActivity implements
     EditText ed;
     TextView result;
     String fileName;
+    final Context context = this;
+    String internalKey;
+    static final int READ_BLOCK_SIZE = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +57,6 @@ public class NewFile extends AppCompatActivity implements
         setContentView(R.layout.activity_new_file);
         ed = (EditText) findViewById(R.id.contentText);
         result = (TextView) findViewById(R.id.savedText);
-
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 // The next two lines tell the new client that “this” current class will handle connection stuff
@@ -68,8 +72,8 @@ public class NewFile extends AppCompatActivity implements
                 .setInterval(10 * 1000)        // 10 seconds, in milliseconds
                 .setFastestInterval(1 * 1000); // 1 second, in milliseconds
 
-        button = (Button) findViewById(R.id.saveButton);
 
+        button = (Button) findViewById(R.id.saveButton);
 
         // add button listener
         button.setOnClickListener(new View.OnClickListener() {
@@ -77,28 +81,82 @@ public class NewFile extends AppCompatActivity implements
 
             @Override
             public void onClick(View arg0) {
-                locText = currentLongitude + ", " + currentLatitude + "\n\n";
-                try {
-                    fileName = DateFormat.format("MM-dd-yyyyy-h-mmssaa", System.currentTimeMillis()).toString();
-                    // this will create a new name everytime and unique
-                    File root = new File(Environment.getExternalStorageDirectory(), "LOC-K");
-                    // if external memory exists and folder with name Notes
-                    /*if (!root.exists()) {
-                        root.mkdirs(); // this will create folder.
-                    }*/
-                    File filepath = new File(root, fileName + ".txt");  // file path to save
-                    FileWriter writer = new FileWriter(filepath);
-                    writer.append(locText);
-                    writer.append(ed.getText().toString());
-                    writer.flush();
-                    writer.close();
-                    String m = "File generated with name " + fileName + ".txt";
-                    result.setText(m);
+                locText = currentLongitude + ", " + currentLatitude;
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    result.setText(e.getMessage().toString());
-                }
+                final Dialog dialog = new Dialog(context);
+                dialog.setContentView(R.layout.activity_save_dialog);
+                dialog.setTitle("Encrypt");
+
+                Button dialogButton = (Button) dialog.findViewById(R.id.dialogButtonSave);
+                final EditText filenameText = (EditText) dialog.findViewById(R.id.filenameTextbox);
+                final EditText passwordText = (EditText) dialog.findViewById(R.id.passwordTextbox);
+
+                // if button is clicked, close the custom dialog
+                dialogButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        try {
+                            // Get secret key
+                            FileInputStream fileIn = openFileInput("secretKey.txt");
+                            InputStreamReader InputRead = new InputStreamReader(fileIn);
+
+                            char[] inputBuffer = new char[READ_BLOCK_SIZE];
+                            int charRead;
+
+                            while ((charRead=InputRead.read(inputBuffer))>0) {
+                                // char to string conversion
+                                String readstring = String.copyValueOf(inputBuffer,0,charRead);
+                                internalKey += readstring;
+                            }
+                            InputRead.close();
+
+
+                            //fileName = DateFormat.format("MM-dd-yyyyy-h-mmssaa", System.currentTimeMillis()).toString();
+                            fileName = filenameText.getText().toString();
+                            String password = passwordText.getText().toString();
+                            String hashedPw = SHA1.hash(password);
+                            String message = ed.getText().toString();
+
+                            Encryption encryption = Encryption.getDefault(internalKey, hashedPw, new byte[16]);
+                            String encrypted = encryption.encrypt(message);
+                            String decrypted = encryption.decrypt(encrypted);
+
+                            // this will create a new name everytime and unique
+                            File root = new File(Environment.getExternalStorageDirectory(), "LOC-K");
+                            // if external memory exists and folder with name Notes
+                            /*if (!root.exists()) {
+                                root.mkdirs(); // this will create folder.
+                            }*/
+                            File filepath = new File(root, fileName + ".txt");  // file path to save
+                            FileWriter writer = new FileWriter(filepath);
+                            writer.append(hashedPw + "\n");
+                            writer.append(locText + "\n");
+                            writer.append(encrypted + "\n");
+                            writer.append(decrypted);
+                            writer.flush();
+                            writer.close();
+                            //String m = "File generated with name " + fileName + ".txt";
+                            //result.setText(m);
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            result.setText(e.getMessage());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+
+                        dialog.dismiss();
+                        Intent intent = new Intent(NewFile.this, ListFile.class);
+                        startActivity(intent);
+                        finish();
+                    }
+                });
+
+                dialog.show();
+
+
 
             }
         });
