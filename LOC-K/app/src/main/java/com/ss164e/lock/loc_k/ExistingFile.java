@@ -15,15 +15,18 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
+
 import java.io.InputStreamReader;
 
 public class ExistingFile extends AppCompatActivity {
 
     String internalKey;
     static final int READ_BLOCK_SIZE = 100;
+
     final Context context = this;
 
     EditText editText;
@@ -42,8 +45,6 @@ public class ExistingFile extends AppCompatActivity {
         return true;
     }
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,6 +52,7 @@ public class ExistingFile extends AppCompatActivity {
 
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
+
         filename = extras.getString("filename");
         password = extras.getString("password");
         hashedPw = extras.getString("hashedPw");
@@ -59,6 +61,7 @@ public class ExistingFile extends AppCompatActivity {
 
 
         try {
+
 
             // Get secret key
             FileInputStream fileIn = openFileInput("secretKey.txt");
@@ -86,9 +89,11 @@ public class ExistingFile extends AppCompatActivity {
             editText = (EditText)findViewById(R.id.showText);
             editText.setText(plainText);
 
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     @Override

@@ -161,8 +161,10 @@ public class ListFile extends AppCompatActivity {
                 else{
                     int count = 0;
                     String sHashedPw = "";
+
                     String sEncryptedLoc = "";
                     String sCipherText = "";
+
 
 
                     //Read text from file
@@ -183,17 +185,18 @@ public class ListFile extends AppCompatActivity {
                             }
                             // read location
                             else if (count == 1) {
+
                                 sEncryptedLoc = line;
                                 count++;
                             }
                             // read ciphertext
                             else {
                                 sCipherText += line;
+
                                 count++;
                             }
                         }
                         br.close();
-
 
                         final Dialog dialog = new Dialog(context);
                         dialog.setContentView(R.layout.activity_password_dialog);
@@ -204,10 +207,12 @@ public class ListFile extends AppCompatActivity {
 
                         dialog.show();
 
+
                         final String finalSHashedPw = sHashedPw;
                         final String finalSEncryptedLoc = sEncryptedLoc;
                         final String finalSCipherText = sCipherText;
                         final String finalFileN = fileN;
+
                         dialogButton.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -220,11 +225,13 @@ public class ListFile extends AppCompatActivity {
                                         dialog.dismiss();
                                         Intent intent = new Intent(ListFile.this, ExistingFile.class);
                                         Bundle extras = new Bundle();
+
                                         extras.putString("filename", finalFileN);
                                         extras.putString("password", passwordEntry);
                                         extras.putString("hashedPw", finalSHashedPw);
                                         extras.putString("encryptedLoc", finalSEncryptedLoc);
                                         extras.putString("cipherText", finalSCipherText);
+
                                         intent.putExtras(extras);
                                         startActivity(intent);
                                         finish();
