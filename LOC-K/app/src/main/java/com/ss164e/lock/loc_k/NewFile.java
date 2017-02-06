@@ -75,7 +75,6 @@ public class NewFile extends AppCompatActivity implements
 
         button = (Button) findViewById(R.id.saveButton);
 
-        // add button listener
         button.setOnClickListener(new View.OnClickListener() {
 
 
@@ -112,15 +111,18 @@ public class NewFile extends AppCompatActivity implements
                             InputRead.close();
 
 
-                            //fileName = DateFormat.format("MM-dd-yyyyy-h-mmssaa", System.currentTimeMillis()).toString();
                             fileName = filenameText.getText().toString();
                             String password = passwordText.getText().toString();
                             String hashedPw = SHA1.hash(password);
                             String message = ed.getText().toString();
+                            String locSalt = SHA1.hash(hashedPw+password);
+                            String textSalt = SHA1.hash(password+locText);
 
-                            Encryption encryption = Encryption.getDefault(internalKey, hashedPw, new byte[16]);
-                            String encrypted = encryption.encrypt(message);
-                            String decrypted = encryption.decrypt(encrypted);
+                            Encryption locationE = Encryption.getDefault(internalKey, locSalt, new byte[16]);
+                            String encryptedLoc = locationE.encrypt(locText);
+
+                            Encryption textE = Encryption.getDefault(internalKey, textSalt, new byte[16]);
+                            String encryptedText = textE.encrypt(message);
 
                             // this will create a new name everytime and unique
                             File root = new File(Environment.getExternalStorageDirectory(), "LOC-K");
@@ -131,9 +133,8 @@ public class NewFile extends AppCompatActivity implements
                             File filepath = new File(root, fileName + ".txt");  // file path to save
                             FileWriter writer = new FileWriter(filepath);
                             writer.append(hashedPw + "\n");
-                            writer.append(locText + "\n");
-                            writer.append(encrypted + "\n");
-                            writer.append(decrypted);
+                            writer.append(encryptedLoc);
+                            writer.append(encryptedText);
                             writer.flush();
                             writer.close();
                             //String m = "File generated with name " + fileName + ".txt";
@@ -146,7 +147,6 @@ public class NewFile extends AppCompatActivity implements
                             e.printStackTrace();
                         }
 
-
                         dialog.dismiss();
                         Intent intent = new Intent(NewFile.this, ListFile.class);
                         startActivity(intent);
@@ -155,8 +155,6 @@ public class NewFile extends AppCompatActivity implements
                 });
 
                 dialog.show();
-
-
 
             }
         });
