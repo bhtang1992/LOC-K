@@ -9,17 +9,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
-
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
-
 import java.io.InputStreamReader;
 
 public class ExistingFile extends AppCompatActivity {
@@ -27,23 +19,30 @@ public class ExistingFile extends AppCompatActivity {
     String internalKey;
     static final int READ_BLOCK_SIZE = 100;
 
-    final Context context = this;
-
-    EditText editText;
-    String filename = "";
-    String password = "";
-    String hashedPw = "";
-    String encryptedLoc = "";
-    String cipherText = "";
-    String locText = "";
-    String plainText = "";
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.activity_option_menu, menu);
         return true;
     }
+
+
+    /*@Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.changePassword:
+
+                break;
+            case R.id.deleteFile:
+
+                break;
+            default:
+                break;
+        }
+
+        return true;
+    }*/
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,12 +52,13 @@ public class ExistingFile extends AppCompatActivity {
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
 
-        filename = extras.getString("filename");
-        password = extras.getString("password");
-        hashedPw = extras.getString("hashedPw");
-        encryptedLoc = extras.getString("encryptedLoc");
-        cipherText = extras.getString("cipherText");
+        String password = extras.getString("password");
+        String hashedPw = extras.getString("hashedPw");
+        String encryptedLoc = extras.getString("encryptedLoc");
+        String cipherText = extras.getString("cipherText");
 
+        String locText = "";
+        String plainText = "";
 
         try {
 
@@ -85,9 +85,8 @@ public class ExistingFile extends AppCompatActivity {
             Encryption textE = Encryption.getDefault(internalKey, textSalt, new byte[16]);
             plainText = textE.decrypt(cipherText);
 
-            //TextView messageView = (TextView)findViewById(R.id.showText);
-            editText = (EditText)findViewById(R.id.showText);
-            editText.setText(plainText);
+            TextView messageView = (TextView)findViewById(R.id.showText);
+            messageView.setText(plainText);
 
 
         } catch (Exception e) {
