@@ -38,6 +38,7 @@ public class ListFile extends AppCompatActivity {
     static final int READ_BLOCK_SIZE = 100;
     public final static String EXTRA_MESSAGE = "";
     final Context context = this;
+    static int count = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +49,14 @@ public class ListFile extends AppCompatActivity {
         try {
             FileInputStream fileIn = openFileInput("secretKey.txt");
 
-            Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show();
+            if (count == 0){
+                Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show();
+                count++;
+            }
+
+            else{
+                Toast.makeText(this,"",Toast.LENGTH_SHORT).cancel();
+            }
 
         } catch (Exception e) {
 
@@ -151,6 +159,12 @@ public class ListFile extends AppCompatActivity {
                     startActivity(intent);
                 }
                 else{
+                    int count = 0;
+                    String sHashedPw = "";
+                    String sEncryptedLoc = "";
+                    String sCipherText = "";
+
+
                     //Read text from file
                     final StringBuilder text = new StringBuilder();
 
@@ -159,10 +173,27 @@ public class ListFile extends AppCompatActivity {
                         String line;
 
                         while ((line = br.readLine()) != null) {
-                            text.append(line);
-                            text.append('\n');
+                            //text.append(line);
+                            //text.append('\n');
+
+                            // read hashedPw
+                            if (count == 0) {
+                                sHashedPw = line;
+                                count++;
+                            }
+                            // read location
+                            else if (count == 1) {
+                                sEncryptedLoc = line;
+                                count++;
+                            }
+                            // read ciphertext
+                            else {
+                                sCipherText += line;
+                                count++;
+                            }
                         }
                         br.close();
+
 
                         final Dialog dialog = new Dialog(context);
                         dialog.setContentView(R.layout.activity_password_dialog);
@@ -173,7 +204,10 @@ public class ListFile extends AppCompatActivity {
 
                         dialog.show();
 
-                        final String finalFilename = filename;
+                        final String finalSHashedPw = sHashedPw;
+                        final String finalSEncryptedLoc = sEncryptedLoc;
+                        final String finalSCipherText = sCipherText;
+                        final String finalFileN = fileN;
                         dialogButton.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -182,15 +216,16 @@ public class ListFile extends AppCompatActivity {
                                     String passwordEntry = passwordText.getText().toString();
                                     String hashedPw = SHA1.hash(passwordEntry);
 
-                                    BufferedReader pwbr = new BufferedReader(new FileReader(finalFilename));
-                                    String storedPw = pwbr.readLine();
-                                    Toast.makeText(getBaseContext(), storedPw, Toast.LENGTH_SHORT).show();
-                                    pwbr.close();
-
-                                    if (hashedPw.equals(storedPw)) {
+                                    if (hashedPw.equals(finalSHashedPw)) {
                                         dialog.dismiss();
                                         Intent intent = new Intent(ListFile.this, ExistingFile.class);
-                                        intent.putExtra(EXTRA_MESSAGE, text.toString());
+                                        Bundle extras = new Bundle();
+                                        extras.putString("filename", finalFileN);
+                                        extras.putString("password", passwordEntry);
+                                        extras.putString("hashedPw", finalSHashedPw);
+                                        extras.putString("encryptedLoc", finalSEncryptedLoc);
+                                        extras.putString("cipherText", finalSCipherText);
+                                        intent.putExtras(extras);
                                         startActivity(intent);
                                         finish();
                                     }
