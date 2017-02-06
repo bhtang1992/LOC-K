@@ -183,6 +183,7 @@ public class ListFile extends AppCompatActivity {
                             }
                             // read location
                             else if (count == 1) {
+
                                 sEncryptedLoc = line;
                                 count++;
                             }
@@ -207,6 +208,7 @@ public class ListFile extends AppCompatActivity {
                         final String finalSHashedPw = sHashedPw;
                         final String finalSEncryptedLoc = sEncryptedLoc;
                         final String finalSCipherText = sCipherText;
+
                         dialogButton.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -219,10 +221,12 @@ public class ListFile extends AppCompatActivity {
                                         dialog.dismiss();
                                         Intent intent = new Intent(ListFile.this, ExistingFile.class);
                                         Bundle extras = new Bundle();
+
                                         extras.putString("password", passwordEntry);
                                         extras.putString("hashedPw", finalSHashedPw);
                                         extras.putString("encryptedLoc", finalSEncryptedLoc);
                                         extras.putString("cipherText", finalSCipherText);
+
                                         intent.putExtras(extras);
                                         startActivity(intent);
                                         finish();

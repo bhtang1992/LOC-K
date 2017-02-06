@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/changePassword"
+        android:title="Change Password"
+        android:showAsAction="always"/>
+    <item
+        android:id="@+id/changeAreaLoc"
+        android:title="Change Area/Location"
+        android:showAsAction="always"/>
+    <item
+        android:id="@+id/saveChanges"
+        android:title="Save Changes"
+        android:showAsAction="always"/>
+
+</menu>

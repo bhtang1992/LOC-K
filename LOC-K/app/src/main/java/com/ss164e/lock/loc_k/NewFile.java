@@ -56,7 +56,6 @@ public class NewFile extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_file);
         ed = (EditText) findViewById(R.id.contentText);
-        result = (TextView) findViewById(R.id.savedText);
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 // The next two lines tell the new client that “this” current class will handle connection stuff
@@ -140,9 +139,6 @@ public class NewFile extends AppCompatActivity implements
                             //String m = "File generated with name " + fileName + ".txt";
                             //result.setText(m);
 
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            result.setText(e.getMessage());
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
