@@ -9,15 +9,32 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.InputStreamReader;
 
 public class ExistingFile extends AppCompatActivity {
 
     String internalKey;
     static final int READ_BLOCK_SIZE = 100;
+    final Context context = this;
+
+    EditText editText;
+    String filename = "";
+    String password = "";
+    String hashedPw = "";
+    String encryptedLoc = "";
+    String cipherText = "";
+    String locText = "";
+    String plainText = "";
+    Bundle extras;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -27,22 +44,6 @@ public class ExistingFile extends AppCompatActivity {
     }
 
 
-    /*@Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.changePassword:
-
-                break;
-            case R.id.deleteFile:
-
-                break;
-            default:
-                break;
-        }
-
-        return true;
-    }*/
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,20 +51,16 @@ public class ExistingFile extends AppCompatActivity {
         setContentView(R.layout.activity_existing_file);
 
         Intent intent = getIntent();
-        Bundle extras = intent.getExtras();
-
-        String password = extras.getString("password");
-        String hashedPw = extras.getString("hashedPw");
-        String encryptedLoc = extras.getString("encryptedLoc");
-        String cipherText = extras.getString("cipherText");
-
-        String locText = "";
-        String plainText = "";
-
+        extras = intent.getExtras();
+        filename = extras.getString("filename");
+        password = extras.getString("password");
+        hashedPw = extras.getString("hashedPw");
+        encryptedLoc = extras.getString("encryptedLoc");
+        cipherText = extras.getString("cipherText");
         try {
-
-
             // Get secret key
+            internalKey = "";
+
             FileInputStream fileIn = openFileInput("secretKey.txt");
             InputStreamReader InputRead = new InputStreamReader(fileIn);
 
@@ -85,14 +82,13 @@ public class ExistingFile extends AppCompatActivity {
             Encryption textE = Encryption.getDefault(internalKey, textSalt, new byte[16]);
             plainText = textE.decrypt(cipherText);
 
-            TextView messageView = (TextView)findViewById(R.id.showText);
-            messageView.setText(plainText);
-
+            //TextView messageView = (TextView)findViewById(R.id.showText);
+            editText = (EditText)findViewById(R.id.showText);
+            editText.setText(plainText);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
@@ -109,7 +105,7 @@ public class ExistingFile extends AppCompatActivity {
                 changePassword();
                 break;
             case R.id.changeAreaLoc:
-
+                changeLocation();
                 break;
             case R.id.saveChanges:
                 saveChanges();
@@ -125,6 +121,18 @@ public class ExistingFile extends AppCompatActivity {
         try {
             editText = (EditText)findViewById(R.id.showText);
             String message = editText.getText().toString();
+
+
+            double longitude = extras.getDouble("longitude");
+            Toast.makeText(getBaseContext(), filename, Toast.LENGTH_SHORT).show();
+            double latitude = extras.getDouble("latitude");
+            double radius = extras.getDouble("radius");
+            if (longitude != 0.0) {
+                locText = longitude + "," + latitude + "," + radius;
+                String locSalt = SHA1.hash(hashedPw + password);
+                Encryption locationE = Encryption.getDefault(internalKey, locSalt, new byte[16]);
+                encryptedLoc = locationE.encrypt(locText);
+            }
             String textSalt = SHA1.hash(password + locText);
 
             Encryption textE = Encryption.getDefault(internalKey, textSalt, new byte[16]);
@@ -132,10 +140,13 @@ public class ExistingFile extends AppCompatActivity {
 
             File root = new File(Environment.getExternalStorageDirectory(), "LOC-K");
 
+
             File filepath = new File(root, filename);  // file path to save
             FileWriter writer = new FileWriter(filepath);
             writer.append(hashedPw + "\n");
-            writer.append(encryptedLoc + "\n");
+            writer.append(":\n");
+            writer.append(encryptedLoc);
+            writer.append(":\n");
             writer.append(encryptedText);
             writer.flush();
             writer.close();
@@ -179,7 +190,7 @@ public class ExistingFile extends AppCompatActivity {
                     File filepath = new File(root, filename);  // file path to save
                     FileWriter writer = new FileWriter(filepath);
                     writer.append(newHashedPw + "\n");
-                    writer.append(encryptedLoc + "\n");
+                    writer.append(encryptedLoc);
                     writer.append(encryptedText);
                     writer.flush();
                     writer.close();
@@ -195,6 +206,21 @@ public class ExistingFile extends AppCompatActivity {
         });
 
     }
+
+    public void changeLocation() {
+        Intent intent = new Intent(ExistingFile.this, MapsActivity.class);
+        Bundle extras = new Bundle();
+        extras.putString("filename", filename);
+        extras.putString("password", password);
+        extras.putString("hashedPw", hashedPw);
+        extras.putString("encryptedLoc", encryptedLoc);
+        extras.putString("cipherText", cipherText);
+        extras.putString("activity", "ExistingFile");
+        intent.putExtras(extras);
+        startActivity(intent);
+        finish();
+    }
+
 
 
 }
