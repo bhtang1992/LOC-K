@@ -28,10 +28,11 @@
 
         <activity android:name=".ExistingFile" />
         <activity android:name=".NewFile" />
+        <activity android:name=".MapsActivity" />
 
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
-            android:value="AIzaSyBDfE09WshkIJ3H25rdxpAVDcYU_FP2KTA" /><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
+            android:value="AIzaSyAORCfQXnwQqrR4Y0r9G_dJmBIzzZCRltc" /><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
      App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information. -->
         <meta-data
             android:name="com.google.android.gms.version"
