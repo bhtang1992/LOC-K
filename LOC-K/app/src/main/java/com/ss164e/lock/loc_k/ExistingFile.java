@@ -2,6 +2,7 @@ package com.ss164e.lock.loc_k;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
@@ -12,9 +13,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
@@ -42,8 +41,6 @@ public class ExistingFile extends AppCompatActivity {
         inflater.inflate(R.menu.activity_option_menu, menu);
         return true;
     }
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,6 +107,9 @@ public class ExistingFile extends AppCompatActivity {
             case R.id.saveChanges:
                 saveChanges();
                 break;
+            case R.id.deleteFile:
+                deleteFile();
+                break;
             default:
                 break;
         }
@@ -121,10 +121,7 @@ public class ExistingFile extends AppCompatActivity {
         try {
             editText = (EditText)findViewById(R.id.showText);
             String message = editText.getText().toString();
-
-
             double longitude = extras.getDouble("longitude");
-            Toast.makeText(getBaseContext(), filename, Toast.LENGTH_SHORT).show();
             double latitude = extras.getDouble("latitude");
             double radius = extras.getDouble("radius");
             if (longitude != 0.0) {
@@ -138,15 +135,14 @@ public class ExistingFile extends AppCompatActivity {
             Encryption textE = Encryption.getDefault(internalKey, textSalt, new byte[16]);
             String encryptedText = textE.encrypt(message);
 
-            File root = new File(Environment.getExternalStorageDirectory(), "LOC-K");
-
-
+            ContextWrapper contextWrapper = new ContextWrapper(getApplicationContext());
+            File root = contextWrapper.getDir("LOC-K", Context.MODE_PRIVATE);
             File filepath = new File(root, filename);  // file path to save
             FileWriter writer = new FileWriter(filepath);
-            writer.append(hashedPw + "\n");
-            writer.append(":\n");
+            writer.append(hashedPw);
+            writer.append(":");
             writer.append(encryptedLoc);
-            writer.append(":\n");
+            writer.append(":");
             writer.append(encryptedText);
             writer.flush();
             writer.close();
@@ -154,6 +150,7 @@ public class ExistingFile extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         Intent intent = new Intent(ExistingFile.this, ListFile.class);
         startActivity(intent);
         finish();
@@ -172,35 +169,39 @@ public class ExistingFile extends AppCompatActivity {
         dialogButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String newPassword = passwordText.getText().toString();
+                if (!newPassword.isEmpty()) {
+                    try {
+                        String newHashedPw = SHA1.hash(newPassword);
+                        String locSalt = SHA1.hash(newHashedPw + newPassword);
+                        String textSalt = SHA1.hash(newPassword + locText);
 
-                try {
-                    String newPassword = passwordText.getText().toString();
-                    String newHashedPw = SHA1.hash(newPassword);
-                    String locSalt = SHA1.hash(newHashedPw+newPassword);
-                    String textSalt = SHA1.hash(newPassword+locText);
+                        Encryption locationE = Encryption.getDefault(internalKey, locSalt, new byte[16]);
+                        encryptedLoc = locationE.encrypt(locText);
 
-                    Encryption locationE = Encryption.getDefault(internalKey, locSalt, new byte[16]);
-                    String encryptedLoc = locationE.encrypt(locText);
+                        Encryption textE = Encryption.getDefault(internalKey, textSalt, new byte[16]);
+                        String encryptedText = textE.encrypt(plainText);
 
-                    Encryption textE = Encryption.getDefault(internalKey, textSalt, new byte[16]);
-                    String encryptedText = textE.encrypt(plainText);
+                        ContextWrapper contextWrapper = new ContextWrapper(getApplicationContext());
+                        File root = contextWrapper.getDir("LOC-K", Context.MODE_PRIVATE);
+                        File filepath = new File(root, filename);  // file path to save
+                        FileWriter writer = new FileWriter(filepath);
+                        writer.append(newHashedPw);
+                        writer.append(":");
+                        writer.append(encryptedLoc);
+                        writer.append(":");
+                        writer.append(encryptedText);
+                        writer.flush();
+                        writer.close();
+                        Intent intent = new Intent(ExistingFile.this, ListFile.class);
+                        startActivity(intent);
+                        finish();
 
-                    File root = new File(Environment.getExternalStorageDirectory(), "LOC-K");
-
-                    File filepath = new File(root, filename);  // file path to save
-                    FileWriter writer = new FileWriter(filepath);
-                    writer.append(newHashedPw + "\n");
-                    writer.append(encryptedLoc);
-                    writer.append(encryptedText);
-                    writer.flush();
-                    writer.close();
-
-                    Intent intent = new Intent(ExistingFile.this, ListFile.class);
-                    startActivity(intent);
-                    finish();
-
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }else{
+                    Toast.makeText(getBaseContext(), "Password required!", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -221,6 +222,15 @@ public class ExistingFile extends AppCompatActivity {
         finish();
     }
 
+    public void deleteFile(){
+        ContextWrapper contextWrapper = new ContextWrapper(getApplicationContext());
+        File root = contextWrapper.getDir("LOC-K", Context.MODE_PRIVATE);
+        File file =  new File(root, filename);
+        file.delete();
+        Intent intent = new Intent(ExistingFile.this, ListFile.class);
+        startActivity(intent);
+        finish();
+    }
 
 
 }
