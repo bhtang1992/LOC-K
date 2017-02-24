@@ -55,11 +55,11 @@
     <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:inputType="textPersonName"
         android:ems="10"
         android:layout_below="@+id/filenameTextbox"
         android:layout_toRightOf="@+id/passwordText"
         android:layout_toEndOf="@+id/passwordText"
-        android:id="@+id/passwordTextbox" />
+        android:id="@+id/passwordTextbox"
+        android:inputType="textPassword" />
 
 </RelativeLayout>
