@@ -14,13 +14,14 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
-
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -53,14 +54,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Circle circle;
     public static final double RADIUS_OF_EARTH_METERS = 6371009;
     double radius;
-    private Button button;
     String activity;
     Bundle extras;
+    TextView radiustext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        radiustext = (TextView)findViewById(R.id.RadiusText);
+        radiustext.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // TODO Auto-generated method stub
+        }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                // TODO Auto-generated method stub
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+                // TODO Auto-generated method stub
+            }
+        });
+
         Intent intent = getIntent();
         extras = intent.getExtras();
         activity = extras.getString("activity");
@@ -77,8 +98,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     intent.putExtras(extras);
                     startActivity(intent);
                     finish();
-                }
-                else if(activity.equals("ExistingFile")){
+                } else if(activity.equals("ExistingFile")){
                     String filename = extras.getString("filename");
                     String password = extras.getString("password");
                     String hashedPw = extras.getString("hashedPw");
@@ -86,16 +106,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     String cipherText = extras.getString("cipherText");
                     Intent intent = new Intent(MapsActivity.this, ExistingFile.class);
                     Bundle extras = new Bundle();
-                    String activity = "changeLoc";
                     extras.putString("filename", filename);
                     extras.putString("password", password);
                     extras.putString("hashedPw", hashedPw);
                     extras.putString("encryptedLoc", encryptedLoc);
                     extras.putString("cipherText", cipherText);
-                    extras.putString("activity", activity);
                     extras.putDouble("latitude", centerMarker.getPosition().latitude);
                     extras.putDouble("longitude", centerMarker.getPosition().longitude);
                     extras.putDouble("radius", circle.getRadius());
+                    intent.putExtras(extras);
+                    startActivity(intent);
+                    finish();
+                }else if(activity.equals("FileChooser")){
+                    String outsiderText = extras.getString("outsiderText");
+                    String path = extras.getString("path");
+                    Intent intent = new Intent(MapsActivity.this, NewFile.class);
+                    Bundle extras = new Bundle();
+                    extras.putString("outsiderText", outsiderText);
+                    extras.putDouble("latitude", centerMarker.getPosition().latitude);
+                    extras.putDouble("longitude", centerMarker.getPosition().longitude);
+                    extras.putDouble("radius", circle.getRadius());
+                    extras.putString("path", path);
                     intent.putExtras(extras);
                     startActivity(intent);
                     finish();
@@ -153,7 +184,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onConnected(Bundle bundle) {
-
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(1000);
         mLocationRequest.setFastestInterval(1000);
@@ -163,7 +193,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 == PackageManager.PERMISSION_GRANTED) {
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
         }
+        Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
 
+        if (location == null) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+
+        } else {
+            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(18));
+        }
     }
 
     @Override
@@ -173,14 +212,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onLocationChanged(Location location) {
-
         mLastLocation = location;
         if (mCurrLocationMarker != null) {
             mCurrLocationMarker.remove();
         }
 
         //Place current location marker
-        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        LatLng latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
         centerMarker = mMap.addMarker(new MarkerOptions()
                 .position(latLng)
                 .draggable(true));
@@ -196,16 +234,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .strokeWidth(10)
                 .fillColor(Color.TRANSPARENT);
         circle = mMap.addCircle(circleOptions);
-
+        radiustext.setText(""+circle.getRadius());
 
         //move map camera
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(18));
 
         //stop location updates
         if (mGoogleApiClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         }
+
 
     }
 
@@ -306,7 +345,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         onMarkerMoved(marker);
     }
 
-    private static double toRadiusMeters(LatLng center, LatLng radius) {
+    private static float toRadiusMeters(LatLng center, LatLng radius) {
         float[] result = new float[1];
         Location.distanceBetween(center.latitude, center.longitude,
                 radius.latitude, radius.longitude, result);
@@ -317,13 +356,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (marker.equals(centerMarker)) {
             circle.setCenter(marker.getPosition());
             radiusMarker.setPosition(toRadiusLatLng(marker.getPosition(), radius));
+            radiustext.setText(""+circle.getRadius());
             return true;
         }
+
         if (marker.equals(radiusMarker)) {
             radius = toRadiusMeters(centerMarker.getPosition(), radiusMarker.getPosition());
             circle.setRadius(radius);
+            radiustext.setText(""+circle.getRadius());
             return true;
         }
+
         return false;
+    }
+
+    public void onBackPressed() {
+        Intent intent = new Intent(this, ListFile.class);
+        startActivity(intent);
+        finish();
     }
 }
