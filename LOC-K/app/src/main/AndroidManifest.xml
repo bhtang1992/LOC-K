@@ -4,12 +4,11 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
     <application
         android:allowBackup="true"
@@ -29,10 +28,12 @@
         <activity android:name=".ExistingFile" />
         <activity android:name=".NewFile" />
         <activity android:name=".MapsActivity" />
+        <activity android:name=".FileChooser" />
 
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
-            android:value="AIzaSyAORCfQXnwQqrR4Y0r9G_dJmBIzzZCRltc" /><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
+            android:value="AIzaSyAORCfQXnwQqrR4Y0r9G_dJmBIzzZCRltc"
+            /><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
      App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information. -->
         <meta-data
             android:name="com.google.android.gms.version"
