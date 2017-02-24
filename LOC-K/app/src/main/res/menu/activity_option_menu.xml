@@ -13,5 +13,9 @@
         android:id="@+id/saveChanges"
         android:title="Save Changes"
         android:showAsAction="always"/>
+    <item
+        android:id="@+id/deleteFile"
+        android:title="Delete File"
+        android:showAsAction="always"/>
 
 </menu>
